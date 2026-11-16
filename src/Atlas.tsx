@@ -1,5 +1,5 @@
 
-import { ReactNode } from "react";
+import { useState } from "react";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 
@@ -17,7 +17,50 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({
   user,
 }: DashboardLayoutProps) {
-	
+
+	const [title, setTitle] = useState("");
+  	const [content, setContent] = useState("");
+
+  	const createNote = async () => {
+
+		const response = await fetch(
+		"/api/db/create_note.php",
+		{
+			method: "POST",
+			headers: {
+			"Content-Type": "application/json"
+			},
+			credentials: "include",
+			body: JSON.stringify({
+			title: title,
+			content: content
+			})
+		}
+		);
+
+		const result = await response.json();
+
+		console.log(result);
+
+  	};
+
+	const [notes, setNotes] = useState([]);
+
+	const getNotes = async () => {
+
+	const response = await fetch(
+		"/api/db/get_notes.php",
+		{
+			credentials: "include"
+		}
+	);
+
+	const data = await response.json();
+
+	setNotes(data);
+
+	};
+
   return (
     <div className="flex min-h-screen w-full bg-gray-100">
       <Sidebar />
@@ -33,24 +76,43 @@ export default function DashboardLayout({
               <p className="mt-1 text-sm text-gray-500">{user.email}</p>
             </div>
 
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+			<div>
 
-              <div className="rounded-xl bg-white p-6 shadow-sm">
-                <p className="text-gray-500">Users</p>
-                <p className="mt-2 text-3xl font-bold">1 250</p>
-              </div>
+				<input
+					placeholder="Titre"
+					value={title}
+					onChange={(e) => setTitle(e.target.value)}
+				/>
 
-              <div className="rounded-xl bg-white p-6 shadow-sm">
-                <p className="text-gray-500">Projects</p>
-                <p className="mt-2 text-3xl font-bold">32</p>
-              </div>
+				<textarea
+					placeholder="Contenu de la note"
+					value={content}
+					onChange={(e) => setContent(e.target.value)}
+				/>
 
-              <div className="rounded-xl bg-white p-6 shadow-sm">
-                <p className="text-gray-500">Revenue</p>
-                <p className="mt-2 text-3xl font-bold">4 500 €</p>
-              </div>
+				<button onClick={createNote}>
+					Enregistrer la note
+				</button>
 
-            </div>
+			</div>
+				<button onClick={getNotes}>
+				Charger mes notes
+				</button>
+
+				<div>
+				{notes.map((note) => (
+					<div key={note.id}>
+
+					<h3>{note.title}</h3>
+
+					<p>{note.content}</p>
+
+					<small>{note.created_at}</small>
+
+					</div>
+				))}
+				</div>
+
           </div>
         </main>
       </div>
