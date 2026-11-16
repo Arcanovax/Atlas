@@ -1,6 +1,8 @@
 node_modules/
 dist/
 .env*
+!.env.example
+api/config.php
 .vite/
 .DS_Store
 .vscode/
