@@ -3,6 +3,7 @@ dist/
 .env*
 !.env.example
 api/config.php
+api/db.php
 .vite/
 .DS_Store
 .vscode/

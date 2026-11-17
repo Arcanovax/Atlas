@@ -10,8 +10,9 @@ if (!isset($_SESSION['user']['id']) || !is_string($_SESSION['user']['id'])) {
 
 require_once __DIR__ . "/../db.php";
 
-$sql = "SELECT * FROM notes
+$sql = "SELECT * FROM nodes
         WHERE user_sub = ?
+		AND type = 'note'
         ORDER BY created_at DESC";
 
 $stmt = $pdo->prepare($sql);

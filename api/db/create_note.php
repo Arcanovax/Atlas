@@ -14,16 +14,19 @@ $data = json_decode(file_get_contents("php://input"), true);
 
 $title = $data["title"];
 $content = $data["content"];
+$parent_id = $data["parent_id"];
 
-$sql = "INSERT INTO notes (user_sub, title, content)
-        VALUES (?, ?, ?)";
+$sql = "INSERT INTO nodes (user_sub, type, title, content, parent_id)
+        VALUES (?, ?, ?, ?, ?)";
 
 $stmt = $pdo->prepare($sql);
 
 $stmt->execute([
     $_SESSION['user']['id'],
+	"note",
     $title,
-    $content
+    $content,
+	$parent_id
 ]);
 
 jsonResponse(200, [
