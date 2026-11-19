@@ -36,42 +36,56 @@ export default function NewFolderButton({ onCreate }: NewFolderButtonProps) {
     if (e.key === "Escape") cancel();
   };
 
-  if (!isOpen) {
-    return (
-      <button
-        onClick={() => setIsOpen(true)}
-        className="flex h-8 w-8 items-center justify-center rounded-md bg-gray-100 text-lg font-medium text-gray-700 transition hover:bg-gray-200"
-      >
-        +
-      </button>
-    );
-  }
+  const iconBtn =
+    "flex h-8 w-8 shrink-0 items-center justify-center text-[#EEEDE7]";
 
   return (
-    <div className="flex items-center gap-2 rounded-md border border-gray-300 bg-white p-2 shadow-sm">
-      <input
-        ref={inputRef}
-        type="text"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder="Nom du dossier"
-        maxLength={255}
-        className="w-48 rounded border border-gray-300 px-2 py-1 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-      />
-      <button
-        onClick={submit}
-        disabled={!name.trim() || loading}
-        className="rounded bg-blue-600 px-3 py-1 text-sm text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        Valider
-      </button>
-      <button
-        onClick={cancel}
-        className="rounded bg-gray-100 px-3 py-1 text-sm text-gray-700 transition hover:bg-gray-200"
-      >
-        Annuler
-      </button>
+    <div className="flex h-8 w-full items-center gap-1">
+      {isOpen ? (
+        <input
+          ref={inputRef}
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Name"
+          maxLength={255}
+          className="h-8 min-w-0 flex-1 bg-transparent text-base font-semibold leading-8 text-[#EEEDE7] placeholder:text-[#62625E] outline-none"
+        />
+      ) : (
+        <h1 className="min-w-0 flex-1 truncate text-base font-semibold leading-8 text-[#EEEDE7]">
+          Folders
+        </h1>
+      )}
+      {isOpen ? (
+        <>
+          <button onClick={cancel} className={iconBtn} aria-label="Cancel">
+            <svg className="h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18 17.94 6M18 18 6.06 6"/>
+            </svg>
+          </button>
+          <button
+            onClick={submit}
+            disabled={!name.trim() || loading}
+            className={`${iconBtn} disabled:text-[#62625E]`}
+            aria-label="Create folder"
+          >
+            <svg className="h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 11.917 9.724 16.5 19 7.5"/>
+            </svg>
+          </button>
+        </>
+      ) : (
+        <button
+          onClick={() => setIsOpen(true)}
+          className={iconBtn}
+          aria-label="New folder"
+        >
+          <svg className="h-5 w-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h14m-7 7V5"/>
+          </svg>
+        </button>
+      )}
     </div>
   );
 }

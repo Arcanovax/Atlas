@@ -1,40 +1,97 @@
 import NewFolderButton from "./Newfolder";
-
-export interface Folder {
-  id: string | number;
-  title: string;
-}
+import type { AuthUser } from "../Atlas";
+import { useState } from "react";
+import {type Folder } from "../Atlas";
+import FileTreeDemo from "./Tree";
 
 interface SideBarProps {
-  folders: Folder[];
-  onFolderSelect: (folder: Folder) => void;
-  onCreateFolder: (name: string) => void | Promise<void>;
+	user: AuthUser
+	folders: Folder[];
+	selectedFolder: Folder | null;
+	onFolderSelect: (folder: Folder | null) => void;
+	onCreateFolder: (name: string) => void | Promise<void>;
 }
 
 export default function Sidebar({
-  folders,
-  onFolderSelect,
-  onCreateFolder
+	user,
+	folders,
+	selectedFolder,
+	onFolderSelect,
+	onCreateFolder
 }: SideBarProps) {
-  return (
-    <aside className="sticky top-0 h-screen w-64 shrink-0 bg-gray-900 text-white p-5">
-      <h1 className="text-5xl font-bold mb-10">Atlas</h1>
 
-      <NewFolderButton onCreate={onCreateFolder} />
+	const [isLoggingOut, setIsLoggingOut] = useState(false);
+  	const [logoutError, setLogoutError] = useState<string | null>(null);
 
-      <div>
-        {folders.map((folder) => (
-          <div key={folder.id} className="flex items-center justify-between py-5">
-            <button
-              type="button"
-              className="flex-1 text-left"
-              onClick={() => onFolderSelect(folder)}
-            >
-              {folder.title}
-            </button>
-          </div>
-        ))}
-      </div>
-    </aside>
-  );
+	async function handleLogout() {
+		setIsLoggingOut(true);
+		setLogoutError(null);
+		try {
+		const response = await fetch("/api/auth/logout.php", {
+			method: "POST",
+			credentials: "include",
+		});
+		if (!response.ok) {
+			throw new Error("Logout request failed");
+		}
+		window.location.assign("/login");
+		} catch {
+		setIsLoggingOut(false);
+		setLogoutError("Impossible de fermer la session. Réessayez.");
+		}
+		}
+
+	return (
+		<aside className="sticky top-0 flex h-screen w-64  flex-col bg-[#0E0E0D] p-5 text-[#B7B7B0]">
+			<button
+				type="button"
+				className="text-6xl mb-10 font-bebas"
+				onClick={() => onFolderSelect(null)}
+				>
+				Atlas
+			</button>
+
+
+			<div>
+				<NewFolderButton onCreate={onCreateFolder} />
+
+				{folders.map((folder) => (
+				<div key={folder.id} className={`flex items-center justify-between p-2 my-2  ${
+				selectedFolder?.id === folder.id
+					? "bg-[#292925] text-white"
+					: "hover:bg-[#1A1A18]"}`
+				}>
+					<button
+					type="button"
+					className="flex-1 text-left"
+					onClick={() => onFolderSelect(folder)}
+					>
+					{folder.title}
+					</button>
+				</div>
+				))}
+			</div>
+
+			<FileTreeDemo></FileTreeDemo>
+
+			<div className="flex mt-auto items-center gap-4">
+				<span className="hidden text-sm sm:inline">
+					{user.name}
+				</span>
+				<button
+				type="button"
+				onClick={handleLogout}
+				disabled={isLoggingOut}
+				className="rounded-lg border px-3 py-2 text-sm font-medium  hover:bg-gray-50 hover:text-[#0E0E0D] disabled:cursor-not-allowed disabled:opacity-60"
+				>
+				{isLoggingOut ? "…" : "Logout"}
+				</button>
+				{logoutError && (
+				<span role="alert" className="text-xs text-red-600">
+					{logoutError}
+				</span>
+				)}
+			</div>
+		</aside>
+	);
 }
