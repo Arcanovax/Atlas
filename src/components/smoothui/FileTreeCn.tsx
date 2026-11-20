@@ -12,11 +12,14 @@ import {
   useRef,
   useState,
 } from "react";
+import type { Folder as AtlasFolder } from "../../Atlas";
+
 
 export type FileTreeItem = {
   id: string;
   name: string;
   type: "file" | "folder";
+  folder?: AtlasFolder;
   children?: FileTreeItem[];
   icon?: ReactNode;
   badge?: ReactNode;
@@ -37,8 +40,12 @@ export type FileTreeProps = {
   onExpandedChange?: (expanded: string[]) => void;
   /** Called when the selected item changes */
   onSelectedChange?: (id: string) => void;
+  /** Called when an Atlas folder is selected */
+  onFolderSelect?: (folder: AtlasFolder | null) => void;
   /** Controlled selected item id */
   selected?: string;
+  /** Controlled selected Atlas folder */
+  selectedFolder?: AtlasFolder | null;
   /** Draw vertical guide lines connecting nested levels */
   showLines?: boolean;
 };
@@ -279,6 +286,8 @@ const FileTree = ({
   onExpandedChange,
   selected: selectedProp,
   onSelectedChange,
+  onFolderSelect,
+  selectedFolder,
   indent = DEFAULT_INDENT,
   showLines = false,
   className,
@@ -295,7 +304,14 @@ const FileTree = ({
   const [internalSelected, setInternalSelected] = useState<string | undefined>(
     undefined
   );
-  const selectedId = isSelectedControlled ? selectedProp : internalSelected;
+  const isFolderSelectionControlled = selectedFolder !== undefined;
+  const selectedId = isFolderSelectionControlled
+    ? selectedFolder
+      ? String(selectedFolder.id)
+      : undefined
+    : isSelectedControlled
+      ? selectedProp
+      : internalSelected;
 
   const flatList = useMemo(
     () => flattenVisible(items, expandedSet, 1, null),
@@ -350,9 +366,11 @@ const FileTree = ({
         setInternalSelected(id);
       }
       onSelectedChange?.(id);
+      const selectedNode = flatList.find(({ item }) => item.id === id)?.item;
+      onFolderSelect?.(selectedNode?.folder ?? null);
       setFocusedId(id);
     },
-    [isSelectedControlled, onSelectedChange]
+    [flatList, isSelectedControlled, onFolderSelect, onSelectedChange]
   );
 
   const flatIndexById = useMemo(() => {

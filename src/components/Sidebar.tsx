@@ -2,7 +2,8 @@ import NewFolderButton from "./Newfolder";
 import type { AuthUser } from "../Atlas";
 import { useState } from "react";
 import {type Folder } from "../Atlas";
-import FileTreeDemo from "./Tree";
+import FileTree from "./smoothui/FileTreeCn";
+import type { FileTreeItem } from "./smoothui/FileTreeCn";
 
 interface SideBarProps {
 	user: AuthUser
@@ -39,7 +40,47 @@ export default function Sidebar({
 		setIsLoggingOut(false);
 		setLogoutError("Impossible de fermer la session. Réessayez.");
 		}
-		}
+	}
+
+	const items: FileTreeItem[] = folders.map((folder) => ({
+		id: String(folder.id),
+		name: folder.title,
+		type: "folder",
+		children: [],
+		folder,
+	}));
+	
+	// const items: FileTreeItem[] = [
+	// {
+	// 	children: [
+	// 	{
+	// 		children: [
+	// 		{ id: "button", name: "button.tsx", type: "file" },
+	// 		{ id: "card", name: "card.tsx", type: "file" },
+	// 		],
+	// 		id: "components",
+	// 		name: "components",
+	// 		type: "folder",
+	// 	},
+	// 	{ id: "layout", name: "layout.tsx", type: "file" },
+	// 	{ id: "page", name: "page.tsx", type: "file" },
+	// 	],
+	// 	id: "app",
+	// 	name: "app",
+	// 	type: "folder",
+	// },
+	// {
+	// 	children: [
+	// 	{ id: "utils", name: "utils.ts", type: "file" },
+	// 	{ id: "hooks", name: "use-toggle.ts", type: "file" },
+	// 	],
+	// 	id: "lib",
+	// 	name: "lib",
+	// 	type: "folder",
+	// },
+	// { badge: "new", id: "readme", name: "README.md", type: "file" },
+	// { id: "package", name: "package.json", type: "file" },
+	// ];
 
 	return (
 		<aside className="sticky top-0 flex h-screen w-64  flex-col bg-[#0E0E0D] p-5 text-[#B7B7B0]">
@@ -54,7 +95,7 @@ export default function Sidebar({
 
 			<div>
 				<NewFolderButton onCreate={onCreateFolder} />
-
+{/* 
 				{folders.map((folder) => (
 				<div key={folder.id} className={`flex items-center justify-between p-2 my-2  ${
 				selectedFolder?.id === folder.id
@@ -69,10 +110,15 @@ export default function Sidebar({
 					{folder.title}
 					</button>
 				</div>
-				))}
+				))} */}
 			</div>
 
-			<FileTreeDemo></FileTreeDemo>
+			<FileTree
+				items={items}
+				selectedFolder={selectedFolder}
+				onFolderSelect={onFolderSelect}
+				showLines
+			/>
 
 			<div className="flex mt-auto items-center gap-4">
 				<span className="hidden text-sm sm:inline">
