@@ -4,13 +4,15 @@ interface HeaderProps {
 	selectedNote: Note | null;
 	selectedFolder: Folder | null;
 	onDeleteFolder: (id: string | number) => void | Promise<void>;
+	onDeleteNote: (id: string | number) => void | Promise<void>;
 }
 
 
 export default function Header({
 	selectedNote,
 	selectedFolder,
-	onDeleteFolder
+	onDeleteFolder,
+	onDeleteNote
 }: HeaderProps) {
 
 
@@ -23,10 +25,21 @@ export default function Header({
 	<h2 className="">
 		Personnal Space {selectedFolder ? `/ ${selectedFolder.title}` : ''} {selectedNote ? `/ ${selectedNote.title}` : ''}
 	</h2>
-	{selectedFolder && (
+	{selectedFolder && !selectedNote &&(
 		<button
 		className=""
 		onClick={() => onDeleteFolder(selectedFolder.id)}
+		>
+			<svg width="20" height="20" viewBox="0 0 13 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+				<path d="M0 3.30001H13M4.33333 3.30001V0.700012H8.66667V3.30001M1.44444 3.30001L2.16667 13.7H10.8333L11.5556 3.30001M5.05556 5.90001V11.1M7.94444 5.90001V11.1" stroke="#62625E"/>
+			</svg>
+		</button>
+	)}
+
+	{selectedNote && (
+		<button
+		className=""
+		onClick={() => onDeleteNote(selectedNote.id)}
 		>
 			<svg width="20" height="20" viewBox="0 0 13 15" fill="none" xmlns="http://www.w3.org/2000/svg">
 				<path d="M0 3.30001H13M4.33333 3.30001V0.700012H8.66667V3.30001M1.44444 3.30001L2.16667 13.7H10.8333L11.5556 3.30001M5.05556 5.90001V11.1M7.94444 5.90001V11.1" stroke="#62625E"/>

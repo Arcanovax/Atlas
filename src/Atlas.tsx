@@ -108,8 +108,9 @@ export default function DashboardLayout({
 			id: id,
 			})
 		}
-		);
+		)
 		getNotes();
+		setSelectedNote(null);
   	};
 
 	const [notes, setNotes] = useState<Note[]>([]);
@@ -168,6 +169,7 @@ export default function DashboardLayout({
 		selectedNote={selectedNote}
 		selectedFolder={selectedFolder}
 		onDeleteFolder={deleteFolder}
+		onDeleteNote={deleteNote}
 	/>
 	<main className="flex-1 p-6 text-[#EEEDE7]">
 		<div className="space-y-6">

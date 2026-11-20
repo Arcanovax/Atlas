@@ -8,3 +8,7 @@ api/db.php
 .DS_Store
 .vscode/
 public/api/commits.json
+scripts/
+.php/
+!scripts/
+!scripts/php-server.js
