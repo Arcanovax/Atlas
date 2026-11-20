@@ -1,12 +1,14 @@
-import {type Folder } from "../Atlas";
+import {type Folder, Note } from "../Atlas";
 
 interface HeaderProps {
+	selectedNote: Note | null;
 	selectedFolder: Folder | null;
 	onDeleteFolder: (id: string | number) => void | Promise<void>;
 }
 
 
 export default function Header({
+	selectedNote,
 	selectedFolder,
 	onDeleteFolder
 }: HeaderProps) {
@@ -19,7 +21,7 @@ export default function Header({
 					   text-[#62625E]">
 
 	<h2 className="">
-		Personnal Space {selectedFolder ? `/ ${selectedFolder.title}` : ''}
+		Personnal Space {selectedFolder ? `/ ${selectedFolder.title}` : ''} {selectedNote ? `/ ${selectedNote.title}` : ''}
 	</h2>
 	{selectedFolder && (
 		<button

@@ -7,6 +7,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
   useCallback,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -43,7 +44,7 @@ export type FileTreeProps = {
   /** Called when an Atlas folder is selected */
   onFolderSelect?: (folder: AtlasFolder | null) => void;
   /** Controlled selected item id */
-  selected?: string;
+  selected?: string | null;
   /** Controlled selected Atlas folder */
   selectedFolder?: AtlasFolder | null;
   /** Draw vertical guide lines connecting nested levels */
@@ -82,6 +83,30 @@ const flattenVisible = (
     }
   }
   return result;
+};
+
+const findAncestorIds = (
+  nodes: FileTreeItem[],
+  targetId: string,
+  ancestors: string[] = []
+): string[] | null => {
+  for (const node of nodes) {
+    if (node.id === targetId) {
+      return ancestors;
+    }
+
+    if (node.children) {
+      const result = findAncestorIds(node.children, targetId, [
+        ...ancestors,
+        node.id,
+      ]);
+      if (result) {
+        return result;
+      }
+    }
+  }
+
+  return null;
 };
 
 type FileTreeRowProps = {
@@ -305,12 +330,12 @@ const FileTree = ({
     undefined
   );
   const isFolderSelectionControlled = selectedFolder !== undefined;
-  const selectedId = isFolderSelectionControlled
-    ? selectedFolder
-      ? String(selectedFolder.id)
-      : undefined
-    : isSelectedControlled
-      ? selectedProp
+  const selectedId = isSelectedControlled
+    ? selectedProp ?? undefined
+    : selectedFolder !== undefined
+      ? selectedFolder
+        ? String(selectedFolder.id)
+        : undefined
       : internalSelected;
 
   const flatList = useMemo(
@@ -321,6 +346,7 @@ const FileTree = ({
   const activeFocusId = focusedId ?? selectedId ?? flatList[0]?.item.id;
 
   const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const lastFocusedSelectionRef = useRef<string | undefined>(undefined);
   const registerRef = useCallback((id: string, el: HTMLDivElement | null) => {
     if (el) {
       itemRefs.current.set(id, el);
@@ -343,6 +369,41 @@ const FileTree = ({
     },
     [isExpandedControlled, onExpandedChange]
   );
+
+  useEffect(() => {
+    if (!selectedId) {
+      lastFocusedSelectionRef.current = undefined;
+      return;
+    }
+
+    if (lastFocusedSelectionRef.current === selectedId) {
+      return;
+    }
+
+    const ancestorIds = findAncestorIds(items, selectedId);
+    if (!ancestorIds) {
+      return;
+    }
+
+    lastFocusedSelectionRef.current = selectedId;
+    const missingAncestorIds = ancestorIds.filter(
+      (id) => !expandedSet.has(id)
+    );
+    if (missingAncestorIds.length > 0) {
+      setExpandedList([...expandedList, ...missingAncestorIds]);
+    }
+
+    setFocusedId(selectedId);
+    const frame = requestAnimationFrame(() => focusItem(selectedId));
+    return () => cancelAnimationFrame(frame);
+  }, [
+    expandedList,
+    expandedSet,
+    focusItem,
+    items,
+    selectedId,
+    setExpandedList,
+  ]);
 
   const toggleExpanded = useCallback(
     (id: string, force?: boolean) => {
@@ -367,7 +428,9 @@ const FileTree = ({
       }
       onSelectedChange?.(id);
       const selectedNode = flatList.find(({ item }) => item.id === id)?.item;
-      onFolderSelect?.(selectedNode?.folder ?? null);
+      if (selectedNode?.folder) {
+        onFolderSelect?.(selectedNode.folder);
+      }
       setFocusedId(id);
     },
     [flatList, isSelectedControlled, onFolderSelect, onSelectedChange]

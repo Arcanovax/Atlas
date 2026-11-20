@@ -1,23 +1,29 @@
 import NewFolderButton from "./Newfolder";
 import type { AuthUser } from "../Atlas";
 import { useState } from "react";
-import {type Folder } from "../Atlas";
+import {type Folder, Note } from "../Atlas";
 import FileTree from "./smoothui/FileTreeCn";
 import type { FileTreeItem } from "./smoothui/FileTreeCn";
 
 interface SideBarProps {
 	user: AuthUser
 	folders: Folder[];
+	notes: Note[];
 	selectedFolder: Folder | null;
+	selectedNote: Note | null;
 	onFolderSelect: (folder: Folder | null) => void;
+	onNoteSelect: (note: Note | null) => void;
 	onCreateFolder: (name: string) => void | Promise<void>;
 }
 
 export default function Sidebar({
 	user,
 	folders,
+	notes,
 	selectedFolder,
+	selectedNote,
 	onFolderSelect,
+	onNoteSelect,
 	onCreateFolder
 }: SideBarProps) {
 
@@ -49,6 +55,23 @@ export default function Sidebar({
 		children: [],
 		folder,
 	}));
+
+	const foldersMap = new Map(
+		items.map((item) => [item.id, item])
+	);
+
+	notes.forEach((note) => {
+		const parent = foldersMap.get(String(note.parent_id));
+
+		if (parent) {
+			parent.children.push({
+				id: String(note.id),
+				name: note.title,
+				type: "file"
+			});
+		}
+	});
+
 	
 	// const items: FileTreeItem[] = [
 	// {
@@ -82,12 +105,25 @@ export default function Sidebar({
 	// { id: "package", name: "package.json", type: "file" },
 	// ];
 
+	const handleSelectedChange = (id: string) => {
+		onNoteSelect(notes.find((note) => String(note.id) === id) ?? null);
+	};
+
+	const selectedId = selectedNote
+		? String(selectedNote.id)
+		: selectedFolder
+			? String(selectedFolder.id)
+			: null;
+
 	return (
 		<aside className="sticky top-0 flex h-screen w-64  flex-col bg-[#0E0E0D] p-5 text-[#B7B7B0]">
 			<button
 				type="button"
 				className="text-6xl mb-10 font-bebas"
-				onClick={() => onFolderSelect(null)}
+				onClick={() => {
+					onFolderSelect(null);
+					onNoteSelect(null);
+				}}
 				>
 				Atlas
 			</button>
@@ -95,29 +131,16 @@ export default function Sidebar({
 
 			<div>
 				<NewFolderButton onCreate={onCreateFolder} />
-{/* 
-				{folders.map((folder) => (
-				<div key={folder.id} className={`flex items-center justify-between p-2 my-2  ${
-				selectedFolder?.id === folder.id
-					? "bg-[#292925] text-white"
-					: "hover:bg-[#1A1A18]"}`
-				}>
-					<button
-					type="button"
-					className="flex-1 text-left"
-					onClick={() => onFolderSelect(folder)}
-					>
-					{folder.title}
-					</button>
-				</div>
-				))} */}
 			</div>
 
 			<FileTree
 				items={items}
+				selected={selectedId}
 				selectedFolder={selectedFolder}
 				onFolderSelect={onFolderSelect}
+				onSelectedChange={handleSelectedChange}
 				showLines
+				className=""
 			/>
 
 			<div className="flex mt-auto items-center gap-4">
