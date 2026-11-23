@@ -190,7 +190,7 @@ export default function DashboardLayout({
 	}, []);
 
   return (
-    <div className="flex min-h-screen w-full bg-[#0A0A09]">
+    <div className="flex min-h-screen w-full bg-[#0A0A09] font-grotesk">
     <Sidebar
 		user={user}
 		folders={folders}
@@ -231,9 +231,30 @@ export default function DashboardLayout({
 				}
 
 				{!selectedFolder && (
-					<p className="mt-1 text-2xl font-bold text-gray-900">
-						Select
-					</p>
+
+					<div className="w-full">
+						<p className=" text-3xl text-[#b7b7b0] mx-10 my-5">
+							Hello {user.name.split(" ")[0]}
+						</p>
+						{folders.map((folder) => (
+						<button
+						className="w-full mt-4 text-left"
+						onClick={() => {
+							setSelection({ kind: "folder", folder: folder });
+						}}
+						key={folder.id}
+						>
+						<div className="flex items-end pl-1 mx-10 border-b hover:bg-white/6 hover:mx-9">
+							<h3 className="text-4xl">{folder.title}</h3>
+							<p className="text-[#62625E] text-sm ml-2 mb-1">
+								{notes.filter((note) =>
+								Number(note.parent_id) === Number(folder.id)).length
+								} Notes</p>
+						</div>
+
+						</button>
+				))}
+					</div>
 				)
 				}
 
