@@ -51,7 +51,6 @@ export default function FolderPage({
 				.map((note) => (
 				<div className="py-5" key={note.id}>
 					<h3>{note.title}</h3>
-					<p>{note.content}</p>
 
 					<button
 					className="text-red-600"

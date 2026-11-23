@@ -1,10 +1,11 @@
-import {type Folder, Note } from "../Atlas";
+import {type Folder, Note, Selection } from "../Atlas";
 
 interface HeaderProps {
 	selectedNote: Note | null;
 	selectedFolder: Folder | null;
 	onDeleteFolder: (id: string | number) => void | Promise<void>;
 	onDeleteNote: (id: string | number) => void | Promise<void>;
+	onSelectionChange: (selection: Selection) => void;
 }
 
 
@@ -12,7 +13,9 @@ export default function Header({
 	selectedNote,
 	selectedFolder,
 	onDeleteFolder,
-	onDeleteNote
+	onDeleteNote,
+	onSelectionChange
+
 }: HeaderProps) {
 
 
@@ -22,8 +25,23 @@ export default function Header({
                        justify-between px-6 font-grotesk
 					   text-[#62625E]">
 
-	<h2 className="">
-		Personnal Space {selectedFolder ? `/ ${selectedFolder.title}` : ''} {selectedNote ? `/ ${selectedNote.title}` : ''}
+	<h2 className="flex">
+		<button
+		onClick={() => onSelectionChange(null)}
+		>
+		Home &nbsp;
+		</button>
+		{selectedFolder && (
+		<button
+		onClick={() => onSelectionChange({ kind: "folder", folder: selectedFolder })}
+		>
+		/ {selectedFolder.title}&nbsp;
+		</button>)}
+		{selectedNote && (<p>
+		/ {selectedNote.title}
+		</p>
+		)}
+
 	</h2>
 	{selectedFolder && !selectedNote &&(
 		<button

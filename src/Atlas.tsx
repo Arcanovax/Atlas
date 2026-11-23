@@ -184,6 +184,7 @@ export default function DashboardLayout({
 		selectedFolder={selectedFolder}
 		onDeleteFolder={deleteFolder}
 		onDeleteNote={deleteNote}
+		onSelectionChange={setSelection}
 	/>
 	<main className="flex-1 p-6 text-[#EEEDE7]">
 		<div className="space-y-6">
