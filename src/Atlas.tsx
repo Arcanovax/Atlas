@@ -16,6 +16,7 @@ export interface Note {
   title: string;
   content: string;
   parent_id: string | number;
+  created_at: string
 }
 
 export interface AuthUser {
