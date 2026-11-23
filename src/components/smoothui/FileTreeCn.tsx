@@ -1,8 +1,9 @@
 "use client";
 
 import { cn } from "@/components/smoothui/smoothui-utils";
-import { ChevronRight, File, Folder, FolderOpen } from "lucide-react";
+import { ChevronRight, File, Folder, FolderOpen, MoreVertical } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
+import { createPortal } from "react-dom";
 import {
   type KeyboardEvent,
   type ReactNode,
@@ -39,6 +40,10 @@ export type FileTreeProps = {
   onSelectedChange?: (id: string) => void;
   /** Controlled selected item id */
   selected?: string | null;
+  /** Called from the selected row action menu */
+  onItemAction?: (id: string) => void;
+  /** Called when an inline name edit is saved */
+  onItemRename?: (id: string, title: string) => void;
   /** Draw vertical guide lines connecting nested levels */
   showLines?: boolean;
 };
@@ -110,6 +115,8 @@ type FileTreeRowProps = {
   onKeyDown: (event: KeyboardEvent<HTMLDivElement>, id: string) => void;
   onSelect: (id: string) => void;
   onToggle: (id: string, force?: boolean) => void;
+  onItemAction?: (id: string) => void;
+  onItemRename?: (id: string, title: string) => void;
   registerRef: (id: string, el: HTMLDivElement | null) => void;
   selectedId: string | undefined;
   shouldReduceMotion: boolean;
@@ -127,6 +134,8 @@ const FileTreeRow = ({
   shouldReduceMotion,
   onToggle,
   onSelect,
+  onItemAction,
+  onItemRename,
   onKeyDown,
   registerRef,
 }: FileTreeRowProps) => {
@@ -138,6 +147,31 @@ const FileTreeRow = ({
   const contentRef = useRef<HTMLDivElement>(null);
   const wasOpenRef = useRef(isOpen);
   const [height, setHeight] = useState<number | "auto">(isOpen ? "auto" : 0);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(node.name);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) {
+      return;
+    }
+
+    const handleOutsideClick = (event: globalThis.MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        !menuButtonRef.current?.contains(target) &&
+        !menuRef.current?.contains(target)
+      ) {
+        setMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [menuOpen]);
 
   useLayoutEffect(() => {
     if (!hasChildren) {
@@ -179,12 +213,12 @@ const FileTreeRow = ({
         aria-level={level}
         aria-selected={isSelected}
         className={cn(
-          "flex cursor-pointer select-none items-center gap-1.5 rounded-md px-1.5 py-1 outline-none",
+          "group/file-row flex cursor-pointer select-none items-center gap-1.5 rounded-md px-1.5 py-1 outline-none",
           "transition-[background-color,box-shadow] duration-150 ease-out",
           "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
           isSelected
             ? "bg-white/[0.12] shadow-[0_0_0_1px_rgb(255_255_255/0.08)]"
-            : "hover:bg-foreground/[0.04]"
+            : "hover:bg-white/[0.06]"
         )}
         onClick={() => {
           onSelect(node.id);
@@ -216,14 +250,107 @@ const FileTreeRow = ({
         <span className="flex shrink-0 items-center">
           {node.icon ?? defaultIcon}
         </span>
-        <span
-          className={cn(
-            "flex-1 truncate text-sm text-white",
-            isSelected && "font-medium"
-          )}
-        >
-          {node.name}
-        </span>
+        {editing ? (
+          <input
+            autoFocus
+            value={editTitle}
+            className="min-w-0 flex-1 rounded border border-[#62625E] bg-[#181817] px-1.5 py-0.5 text-sm text-white outline-none"
+            onClick={(event) => event.stopPropagation()}
+            onChange={(event) => setEditTitle(event.target.value)}
+            onKeyDown={(event) => {
+              event.stopPropagation();
+              if (event.key === "Enter") {
+                event.preventDefault();
+                const title = editTitle.trim();
+                if (title && title !== node.name) {
+                  onItemRename?.(node.id, title);
+                }
+                setEditing(false);
+              }
+              if (event.key === "Escape") {
+                setEditing(false);
+                setEditTitle(node.name);
+              }
+            }}
+            onBlur={() => {
+              const title = editTitle.trim();
+              if (title && title !== node.name) {
+                onItemRename?.(node.id, title);
+              }
+              setEditing(false);
+            }}
+          />
+        ) : (
+          <span
+            className={cn(
+              "flex-1 truncate text-sm text-white",
+              isSelected && "font-medium"
+            )}
+          >
+            {node.name}
+          </span>
+        )}
+        {onItemAction ? (
+          <span className="relative ml-auto shrink-0">
+            <button
+              ref={menuButtonRef}
+              type="button"
+              aria-label={`Actions pour ${node.name}`}
+              aria-expanded={menuOpen}
+              className={cn(
+                "flex h-6 w-6 items-center justify-center rounded text-[#B7B7B0] hover:bg-white/10 hover:text-white",
+                "opacity-0 transition-opacity group-hover/file-row:opacity-100",
+                (isSelected || menuOpen) && "opacity-100"
+              )}
+              onClick={(event) => {
+                event.stopPropagation();
+                if (!menuOpen) {
+                  const rect = menuButtonRef.current?.getBoundingClientRect();
+                  if (rect) {
+                    setMenuPosition({ top: rect.bottom + 4, left: rect.right - 144 });
+                  }
+                }
+                setMenuOpen((open) => !open);
+              }}
+            >
+              <MoreVertical size={16} />
+            </button>
+            {menuOpen ? (
+              createPortal(
+                <span
+                  ref={menuRef}
+                  className="fixed z-[100] flex w-36 flex-col rounded-md border border-[#282825] bg-[#181817] p-1 shadow-xl"
+                  style={{ top: menuPosition.top, left: menuPosition.left }}
+                >
+                  <button
+                    type="button"
+                    className="rounded px-2 py-1.5 text-left text-sm text-white hover:bg-white/10"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setMenuOpen(false);
+                      setEditTitle(node.name);
+                      setEditing(true);
+                    }}
+                  >
+                    Renommer
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded px-2 py-1.5 text-left text-sm text-white hover:bg-red-500/10"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setMenuOpen(false);
+                      onItemAction(node.id);
+                    }}
+                  >
+                    Supprimer
+                  </button>
+                </span>,
+                document.body
+              )
+            ) : null}
+          </span>
+        ) : null}
         {node.badge ? (
           <span className="ml-auto shrink-0 text-gray-300 text-xs">
             {node.badge}
@@ -273,6 +400,8 @@ const FileTreeRow = ({
                 key={child.id}
                 level={level + 1}
                 node={child}
+                onItemAction={onItemAction}
+                onItemRename={onItemRename}
                 onKeyDown={onKeyDown}
                 onSelect={onSelect}
                 onToggle={onToggle}
@@ -296,6 +425,8 @@ const FileTree = ({
   onExpandedChange,
   selected: selectedProp,
   onSelectedChange,
+  onItemAction,
+  onItemRename,
   indent = DEFAULT_INDENT,
   showLines = false,
   className,
@@ -525,6 +656,8 @@ const FileTree = ({
           key={node.id}
           level={1}
           node={node}
+          onItemAction={onItemAction}
+          onItemRename={onItemRename}
           onKeyDown={handleKeyDown}
           onSelect={handleSelect}
           onToggle={toggleExpanded}

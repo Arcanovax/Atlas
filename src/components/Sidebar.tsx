@@ -12,6 +12,10 @@ interface SideBarProps {
 	selection: Selection;
 	onSelectionChange: (selection: Selection) => void;
 	onCreateFolder: (name: string) => void | Promise<void>;
+	onRenameFolder: (id: string | number, title: string) => void | Promise<void>;
+	onRenameNote: (id: string | number, title: string) => void | Promise<void>;
+	onDeleteFolder: (id: string | number) => void | Promise<void>;
+	onDeleteNote: (id: string | number) => void | Promise<void>;
 }
 
 export default function Sidebar({
@@ -20,7 +24,11 @@ export default function Sidebar({
 	notes,
 	selection,
 	onSelectionChange,
-	onCreateFolder
+	onCreateFolder,
+	onRenameFolder,
+	onRenameNote,
+	onDeleteFolder,
+	onDeleteNote
 }: SideBarProps) {
 
 	const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -67,39 +75,6 @@ export default function Sidebar({
 		}
 	});
 
-
-	// const items: FileTreeItem[] = [
-	// {
-	// 	children: [
-	// 	{
-	// 		children: [
-	// 		{ id: "button", name: "button.tsx", type: "file" },
-	// 		{ id: "card", name: "card.tsx", type: "file" },
-	// 		],
-	// 		id: "components",
-	// 		name: "components",
-	// 		type: "folder",
-	// 	},
-	// 	{ id: "layout", name: "layout.tsx", type: "file" },
-	// 	{ id: "page", name: "page.tsx", type: "file" },
-	// 	],
-	// 	id: "app",
-	// 	name: "app",
-	// 	type: "folder",
-	// },
-	// {
-	// 	children: [
-	// 	{ id: "utils", name: "utils.ts", type: "file" },
-	// 	{ id: "hooks", name: "use-toggle.ts", type: "file" },
-	// 	],
-	// 	id: "lib",
-	// 	name: "lib",
-	// 	type: "folder",
-	// },
-	// { badge: "new", id: "readme", name: "README.md", type: "file" },
-	// { id: "package", name: "package.json", type: "file" },
-	// ];
-
 	const handleSelectedChange = (id: string) => {
 		if (id.startsWith("folder:")) {
 			const folder = folders.find(
@@ -117,6 +92,42 @@ export default function Sidebar({
 				(item) => String(item.id) === String(note?.parent_id)
 			);
 			onSelectionChange(note && folder ? { kind: "note", folder, note } : null);
+		}
+	};
+
+	const handleItemAction = (id: string) => {
+		if (id.startsWith("folder:")) {
+			const folder = folders.find(
+				(item) => `folder:${String(item.id)}` === id
+			);
+			if (!folder) return;
+			void onDeleteFolder(folder.id);
+			return;
+		}
+
+		if (id.startsWith("note:")) {
+			const note = notes.find(
+				(item) => `note:${String(item.id)}` === id
+			);
+			if (!note) return;
+			void onDeleteNote(note.id);
+		}
+	};
+
+	const handleItemRename = (id: string, title: string) => {
+		if (id.startsWith("folder:")) {
+			const folder = folders.find(
+				(item) => `folder:${String(item.id)}` === id
+			);
+			if (folder) void onRenameFolder(folder.id, title);
+			return;
+		}
+
+		if (id.startsWith("note:")) {
+			const note = notes.find(
+				(item) => `note:${String(item.id)}` === id
+			);
+			if (note) void onRenameNote(note.id, title);
 		}
 	};
 
@@ -145,6 +156,8 @@ export default function Sidebar({
 				items={items}
 				selected={selectedId}
 				onSelectedChange={handleSelectedChange}
+				onItemAction={handleItemAction}
+				onItemRename={handleItemRename}
 				className=""
 			/>
 

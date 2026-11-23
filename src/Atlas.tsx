@@ -73,8 +73,9 @@ export default function DashboardLayout({
 	};
 
 
-  	const createNote = async (title: string, content: string) => {
-		if (!selectedFolder) {
+  	const createNote = async (title: string, content: string, parentId?: string | number) => {
+		const targetFolderId = parentId ?? selectedFolder?.id;
+		if (targetFolderId === undefined) {
 			return;
 		}
 
@@ -89,7 +90,7 @@ export default function DashboardLayout({
 			body: JSON.stringify({
 			title: title,
 			content: content,
-			parent_id: selectedFolder.id
+			parent_id: targetFolderId
 			})
 		}
 		);
@@ -100,7 +101,7 @@ export default function DashboardLayout({
 		if (newNote) {
 			setSelection({
 				kind: "note",
-				folder: selectedFolder,
+				folder: folders.find((folder) => String(folder.id) === String(targetFolderId)) ?? selectedFolder!,
 				note: newNote,
 			});
 		}
@@ -163,6 +164,26 @@ export default function DashboardLayout({
 		await getNotes();
 		};
 
+	const renameFolder = async (id: Folder["id"], title: string) => {
+		await fetch("/api/db/rename_node.php", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			credentials: "include",
+			body: JSON.stringify({ id, title }),
+		});
+		await getFolders();
+	};
+
+	const renameNote = async (id: Note["id"], title: string) => {
+		await fetch("/api/db/rename_node.php", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			credentials: "include",
+			body: JSON.stringify({ id, title }),
+		});
+		await getNotes();
+	};
+
 	useEffect(() => {
 		getFolders();
 		getNotes();
@@ -177,6 +198,10 @@ export default function DashboardLayout({
 		selection={selection}
 		onSelectionChange={setSelection}
 		onCreateFolder={createFolder}
+		onRenameFolder={renameFolder}
+		onRenameNote={renameNote}
+		onDeleteFolder={deleteFolder}
+		onDeleteNote={deleteNote}
 	/>
     <div className="flex min-w-0 flex-1 flex-col">
     <Header
