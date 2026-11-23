@@ -40,6 +40,11 @@ export default function DashboardLayout({
 	const [selection, setSelection] = useState<Selection>(null);
 	const selectedFolder = selection?.folder ?? null;
 	const selectedNote = selection?.kind === "note" ? selection.note : null;
+	const [isCreatingNote, setIsCreatingNote] = useState(false);
+
+	useEffect(() => {
+		setIsCreatingNote(false);
+	}, [selection]);
 
 
 
@@ -214,16 +219,24 @@ export default function DashboardLayout({
 	<main className="flex-1 p-6 text-[#EEEDE7]">
 		<div className="space-y-6">
 			<div>
-				{selectedFolder && !selectedNote && (
+				{isCreatingNote && selectedFolder && (
+					<NotePage
+						selectedFolder={selectedFolder}
+						onCreateNote={async (title, content, parentId) => {
+							await createNote(title, content, parentId);
+							setIsCreatingNote(false);
+						}}
+					/>
+				)}
+				{selectedFolder && !selectedNote && !isCreatingNote && (
 					<FolderPage
 					notes={notes}
 					selectedFolder={selectedFolder}
-					onDeleteNote={deleteNote}
-					onCreateNote={createNote}
 					onSelectionChange={setSelection}
+					onAddNote={() => setIsCreatingNote(true)}
 					/>
 				)}
-				{selectedFolder && selectedNote && (
+				{selectedFolder && selectedNote && !isCreatingNote && (
 					<NotePage
 					selectedNote={selectedNote}
 					/>
