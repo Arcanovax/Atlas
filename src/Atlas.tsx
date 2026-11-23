@@ -2,6 +2,8 @@
 import { useState, useEffect } from "react";
 import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
+import FolderPage from "./pages/FolderPage";
+import NotePage from "./pages/NotePage";
 
 
 export interface Folder {
@@ -13,7 +15,7 @@ export interface Note {
   id: string | number;
   title: string;
   content: string;
-  parent_id: string | number; 
+  parent_id: string | number;
 }
 
 export interface AuthUser {
@@ -23,6 +25,11 @@ export interface AuthUser {
   picture?: string;
 }
 
+export type Selection =
+  | { kind: "folder"; folder: Folder }
+  | { kind: "note"; folder: Folder; note: Note }
+  | null;
+
 interface DashboardLayoutProps {
   user: AuthUser;
 }
@@ -30,15 +37,14 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({
   user,
 }: DashboardLayoutProps) {
+	const [selection, setSelection] = useState<Selection>(null);
+	const selectedFolder = selection?.folder ?? null;
+	const selectedNote = selection?.kind === "note" ? selection.note : null;
 
-	const [selectedFolder, setSelectedFolder] = useState<Folder | null>(null);
-	const [selectedNote, setSelectedNote] = useState<Note | null>(null);
 
-	const [title, setTitle] = useState("");
-  	const [content, setContent] = useState("");
 
 	const [folders, setFolders] = useState<Folder[]>([]);
-	
+
 
 	const getFolders = async () => {
 		const response = await fetch("/api/db/get_folders.php", {
@@ -62,12 +68,15 @@ export default function DashboardLayout({
         	(folder) => folder.title === name
     	);
 		if (newFolder) {
-			setSelectedFolder(newFolder);
+			setSelection({ kind: "folder", folder: newFolder });
 		}
 	};
 
 
-  	const createNote = async () => {
+  	const createNote = async (title: string, content: string) => {
+		if (!selectedFolder) {
+			return;
+		}
 
 		await fetch(
 		"/api/db/create_note.php",
@@ -89,12 +98,16 @@ export default function DashboardLayout({
         	(note) => note.title === title
     	);
 		if (newNote) {
-			setSelectedNote(newNote);
+			setSelection({
+				kind: "note",
+				folder: selectedFolder,
+				note: newNote,
+			});
 		}
 		};
 
-  	
-	const deleteNote = async (id: number) => {
+
+	const deleteNote = async (id: Note["id"]) => {
 
 		const response = await fetch(
 		"/api/db/delete_node.php",
@@ -109,8 +122,12 @@ export default function DashboardLayout({
 			})
 		}
 		)
-		getNotes();
-		setSelectedNote(null);
+		await getNotes();
+		setSelection((current) =>
+			current?.kind === "note"
+				? { kind: "folder", folder: current.folder }
+				: current
+		);
   	};
 
 	const [notes, setNotes] = useState<Note[]>([]);
@@ -138,8 +155,7 @@ export default function DashboardLayout({
 		});
 
 
-		setSelectedFolder(null);
-		setSelectedNote(null);
+		setSelection(null);
 
 
 
@@ -158,10 +174,8 @@ export default function DashboardLayout({
 		user={user}
 		folders={folders}
 		notes={notes}
-		selectedFolder={selectedFolder}
-		selectedNote={selectedNote}
-		onFolderSelect={setSelectedFolder}
-		onNoteSelect={setSelectedNote}
+		selection={selection}
+		onSelectionChange={setSelection}
 		onCreateFolder={createFolder}
 	/>
     <div className="flex min-w-0 flex-1 flex-col">
@@ -175,59 +189,18 @@ export default function DashboardLayout({
 		<div className="space-y-6">
 			<div>
 				{selectedFolder && !selectedNote && (
-					<>
-					<div>
-						<input
-						placeholder="Titre"
-						value={title}
-						onChange={(e) => setTitle(e.target.value)}
-						/>
-
-						<textarea
-						placeholder="Contenu de la note"
-						value={content}
-						onChange={(e) => setContent(e.target.value)}
-						/>
-
-						<button onClick={createNote}>
-						Enregistrer la note
-						</button>
-					</div>
-						<div>
-						{notes
-							.filter(
-							(note) =>
-								Number(note.parent_id) === Number(selectedFolder.id)
-							)
-							.map((note) => (
-							<div className="py-5" key={note.id}>
-								<h3>{note.title}</h3>
-								<p>{note.content}</p>
-
-								<button
-								className="text-red-600"
-								onClick={() => deleteNote(note.id)}
-								>
-								delete
-								</button>
-								<button
-								className="text-blue-600"
-								onClick={() => setSelectedNote(note)}
-								>
-								View
-								</button>
-							</div>
-							))}
-						</div>
-					</>
+					<FolderPage
+					notes={notes}
+					selectedFolder={selectedFolder}
+					onDeleteNote={deleteNote}
+					onCreateNote={createNote}
+					onSelectionChange={setSelection}
+					/>
 				)}
 				{selectedFolder && selectedNote && (
-					<div>
-					<p className="mt-1 text-2xl font-bold text-gray-900">
-						{selectedNote.title}
-					</p>
-					{selectedNote.content}
-					</div>
+					<NotePage
+					selectedNote={selectedNote}
+					/>
 				)
 				}
 

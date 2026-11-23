@@ -5,7 +5,7 @@ import './index.css'
 
 import { useEffect, useState } from "react";
 import Atlas, { type AuthUser } from './Atlas';
-import GoogleLoginPage from './components/GoogleLoginPage';
+import GoogleLoginPage from './pages/GoogleLoginPage';
 import { Navigate, Routes, Route } from "react-router-dom";
 
 function ProtectedDashboard() {

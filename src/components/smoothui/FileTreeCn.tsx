@@ -13,14 +13,10 @@ import {
   useRef,
   useState,
 } from "react";
-import type { Folder as AtlasFolder } from "../../Atlas";
-
-
 export type FileTreeItem = {
   id: string;
   name: string;
   type: "file" | "folder";
-  folder?: AtlasFolder;
   children?: FileTreeItem[];
   icon?: ReactNode;
   badge?: ReactNode;
@@ -41,12 +37,8 @@ export type FileTreeProps = {
   onExpandedChange?: (expanded: string[]) => void;
   /** Called when the selected item changes */
   onSelectedChange?: (id: string) => void;
-  /** Called when an Atlas folder is selected */
-  onFolderSelect?: (folder: AtlasFolder | null) => void;
   /** Controlled selected item id */
   selected?: string | null;
-  /** Controlled selected Atlas folder */
-  selectedFolder?: AtlasFolder | null;
   /** Draw vertical guide lines connecting nested levels */
   showLines?: boolean;
 };
@@ -177,10 +169,7 @@ const FileTreeRow = ({
       <Folder className="text-brand" size={16} />
     )
   ) : (
-    <File
-      className={isSelected ? "text-foreground" : "text-muted-foreground"}
-      size={16}
-    />
+    <File className="text-[#B7B7B0]" size={16} />
   );
 
   return (
@@ -193,12 +182,8 @@ const FileTreeRow = ({
           "flex cursor-pointer select-none items-center gap-1.5 rounded-md px-1.5 py-1 outline-none",
           "transition-[background-color,box-shadow] duration-150 ease-out",
           "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-          // A left rail would sit exactly on the indentation guide, so the
-          // selected row lifts instead: a solid surface with a hairline edge
-          // and a shallow shadow, reading along the whole row. Dark mode lifts
-          // with light, because a shadow has nothing to fall on there.
           isSelected
-            ? "bg-background shadow-[0_0_0_1px_rgb(0_0_0/0.08),0_1px_2px_-1px_rgb(0_0_0/0.10)] dark:bg-foreground/[0.07] dark:shadow-[0_0_0_1px_rgb(255_255_255/0.10)]"
+            ? "bg-white/[0.12] shadow-[0_0_0_1px_rgb(255_255_255/0.08)]"
             : "hover:bg-foreground/[0.04]"
         )}
         onClick={() => {
@@ -233,14 +218,14 @@ const FileTreeRow = ({
         </span>
         <span
           className={cn(
-            "flex-1 truncate text-foreground text-sm",
+            "flex-1 truncate text-sm text-white",
             isSelected && "font-medium"
           )}
         >
           {node.name}
         </span>
         {node.badge ? (
-          <span className="ml-auto shrink-0 text-muted-foreground text-xs">
+          <span className="ml-auto shrink-0 text-gray-300 text-xs">
             {node.badge}
           </span>
         ) : null}
@@ -311,8 +296,6 @@ const FileTree = ({
   onExpandedChange,
   selected: selectedProp,
   onSelectedChange,
-  onFolderSelect,
-  selectedFolder,
   indent = DEFAULT_INDENT,
   showLines = false,
   className,
@@ -329,14 +312,9 @@ const FileTree = ({
   const [internalSelected, setInternalSelected] = useState<string | undefined>(
     undefined
   );
-  const isFolderSelectionControlled = selectedFolder !== undefined;
   const selectedId = isSelectedControlled
     ? selectedProp ?? undefined
-    : selectedFolder !== undefined
-      ? selectedFolder
-        ? String(selectedFolder.id)
-        : undefined
-      : internalSelected;
+    : internalSelected;
 
   const flatList = useMemo(
     () => flattenVisible(items, expandedSet, 1, null),
@@ -427,13 +405,9 @@ const FileTree = ({
         setInternalSelected(id);
       }
       onSelectedChange?.(id);
-      const selectedNode = flatList.find(({ item }) => item.id === id)?.item;
-      if (selectedNode?.folder) {
-        onFolderSelect?.(selectedNode.folder);
-      }
       setFocusedId(id);
     },
-    [flatList, isSelectedControlled, onFolderSelect, onSelectedChange]
+    [isSelectedControlled, onSelectedChange]
   );
 
   const flatIndexById = useMemo(() => {

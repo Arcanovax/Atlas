@@ -1,5 +1,5 @@
 import NewFolderButton from "./Newfolder";
-import type { AuthUser } from "../Atlas";
+import type { AuthUser, Selection } from "../Atlas";
 import { useState } from "react";
 import {type Folder, Note } from "../Atlas";
 import FileTree from "./smoothui/FileTreeCn";
@@ -9,10 +9,8 @@ interface SideBarProps {
 	user: AuthUser
 	folders: Folder[];
 	notes: Note[];
-	selectedFolder: Folder | null;
-	selectedNote: Note | null;
-	onFolderSelect: (folder: Folder | null) => void;
-	onNoteSelect: (note: Note | null) => void;
+	selection: Selection;
+	onSelectionChange: (selection: Selection) => void;
 	onCreateFolder: (name: string) => void | Promise<void>;
 }
 
@@ -20,10 +18,8 @@ export default function Sidebar({
 	user,
 	folders,
 	notes,
-	selectedFolder,
-	selectedNote,
-	onFolderSelect,
-	onNoteSelect,
+	selection,
+	onSelectionChange,
 	onCreateFolder
 }: SideBarProps) {
 
@@ -49,15 +45,14 @@ export default function Sidebar({
 	}
 
 	const items: FileTreeItem[] = folders.map((folder) => ({
-		id: String(folder.id),
+		id: `folder:${String(folder.id)}`,
 		name: folder.title,
 		type: "folder",
 		children: [],
-		folder,
 	}));
 
 	const foldersMap = new Map(
-		items.map((item) => [item.id, item])
+		folders.map((folder, index) => [String(folder.id), items[index]])
 	);
 
 	notes.forEach((note) => {
@@ -65,14 +60,14 @@ export default function Sidebar({
 
 		if (parent) {
 			parent.children.push({
-				id: String(note.id),
+				id: `note:${String(note.id)}`,
 				name: note.title,
 				type: "file"
 			});
 		}
 	});
 
-	
+
 	// const items: FileTreeItem[] = [
 	// {
 	// 	children: [
@@ -106,13 +101,29 @@ export default function Sidebar({
 	// ];
 
 	const handleSelectedChange = (id: string) => {
-		onNoteSelect(notes.find((note) => String(note.id) === id) ?? null);
+		if (id.startsWith("folder:")) {
+			const folder = folders.find(
+				(item) => `folder:${String(item.id)}` === id
+			);
+			onSelectionChange(folder ? { kind: "folder", folder } : null);
+			return;
+		}
+
+		if (id.startsWith("note:")) {
+			const note = notes.find(
+				(item) => `note:${String(item.id)}` === id
+			);
+			const folder = folders.find(
+				(item) => String(item.id) === String(note?.parent_id)
+			);
+			onSelectionChange(note && folder ? { kind: "note", folder, note } : null);
+		}
 	};
 
-	const selectedId = selectedNote
-		? String(selectedNote.id)
-		: selectedFolder
-			? String(selectedFolder.id)
+	const selectedId = selection?.kind === "note"
+		? `note:${String(selection.note.id)}`
+		: selection?.kind === "folder"
+			? `folder:${String(selection.folder.id)}`
 			: null;
 
 	return (
@@ -120,10 +131,7 @@ export default function Sidebar({
 			<button
 				type="button"
 				className="text-6xl mb-10 font-bebas"
-				onClick={() => {
-					onFolderSelect(null);
-					onNoteSelect(null);
-				}}
+				onClick={() => onSelectionChange(null)}
 				>
 				Atlas
 			</button>
@@ -136,10 +144,7 @@ export default function Sidebar({
 			<FileTree
 				items={items}
 				selected={selectedId}
-				selectedFolder={selectedFolder}
-				onFolderSelect={onFolderSelect}
 				onSelectedChange={handleSelectedChange}
-				showLines
 				className=""
 			/>
 
